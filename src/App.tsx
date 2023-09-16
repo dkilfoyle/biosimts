@@ -1,13 +1,11 @@
-import { useState } from "react";
-import "./App.css";
-import { Grid } from "./Grid";
-import { Canvas2 } from "./Canvas2";
+import { ChakraProvider } from "@chakra-ui/react";
+import { Canvas } from "./Canvas";
 
 function App() {
   return (
-    <div>
-      <Canvas2></Canvas2>
-    </div>
+    <ChakraProvider>
+      <Canvas></Canvas>
+    </ChakraProvider>
   );
 }
 
