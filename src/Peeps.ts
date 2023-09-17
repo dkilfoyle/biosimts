@@ -16,6 +16,8 @@ export interface ISimulationConfig {
   maxGenerations: number;
   animateGeneration: number;
   gridSize: number;
+  showTails: boolean;
+  pauseAfterAnimation: boolean;
 }
 
 export const defaultSimulationConfig: ISimulationConfig = {
@@ -24,6 +26,8 @@ export const defaultSimulationConfig: ISimulationConfig = {
   maxGenerations: 500,
   animateGeneration: 20,
   gridSize: 128,
+  showTails: true,
+  pauseAfterAnimation: true,
 };
 
 export class Peeps {
@@ -31,6 +35,8 @@ export class Peeps {
   generations = 0;
   time = 0;
   public grid!: Grid;
+  public pause = false;
+  public selectedIndiv = -1;
 
   constructor(public config: ISimulationConfig) {
     this.reset();
@@ -39,6 +45,8 @@ export class Peeps {
   reset() {
     this.time = 0;
     this.generations = 0;
+    this.pause = false;
+    this.selectedIndiv = -1;
     this.grid = new Grid(this.config.gridSize, this.config.gridSize);
     this.individuals = _.range(0, this.config.initialPopulationSize).map((i) => {
       const pos = this.grid.findEmptyPos();

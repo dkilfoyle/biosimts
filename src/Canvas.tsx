@@ -1,17 +1,17 @@
 import { useEffect, useRef, useState } from "react";
 import { ISimulationConfig, ISimulationStatus, Peeps, defaultSimulationConfig } from "./Peeps";
 import _ from "lodash";
-import { Box, Button, Flex, FormControl, FormLabel, Grid, Input, Spacer, VStack } from "@chakra-ui/react";
-import { Individual } from "./Individual";
+import { Box, Button, Checkbox, Flex, FormControl, FormLabel, Grid, Input, Spacer, VStack } from "@chakra-ui/react";
 
 const peeps = new Peeps(defaultSimulationConfig);
 
 export const Canvas = () => {
-  console.log("redraw");
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const requestIdRef = useRef(0);
   const [statusData, setStatusData] = useState<ISimulationStatus>(peeps.getStatus());
   const [configData, setConfigData] = useState<ISimulationConfig>(defaultSimulationConfig);
+  const [selectedIndiv, setSelectedIndiv] = useState(-1);
+  const [pause, setPause] = useState(false);
 
   const size = { width: 900, height: 900 };
 
@@ -50,21 +50,29 @@ export const Canvas = () => {
         ctx.beginPath();
         ctx.arc(x * deltaX + offX, y * deltaY + offY, offX * 0.7, 0, 2 * Math.PI);
         ctx.fill();
-        ctx.closePath();
       };
 
       peeps.individuals.forEach((indiv) => {
         const c = indiv.getColor();
         drawIndiv(indiv.x, indiv.y, c, 1);
-        indiv.tail.forEach((t, i) => drawIndiv(t[0], t[1], c, (1 * i) / 5));
+        if (peeps.config.showTails) indiv.tail.forEach((t, i) => drawIndiv(t[0], t[1], c, (1 * i) / 5));
       });
+
+      if (peeps.selectedIndiv !== -1) {
+        const si = peeps.individuals[peeps.selectedIndiv];
+        ctx.strokeStyle = "red";
+        ctx.fillStyle = "red";
+        ctx.beginPath();
+        ctx.arc(si.x * deltaX + offX, si.y * deltaY + offY, offX * 1.2, 0, 2 * Math.PI);
+        ctx.fill();
+      }
     }
   };
 
   const runStep = () => {
     if (!canvasRef.current) return;
     drawFrame();
-    peeps.stepTime();
+    if (!peeps.pause) peeps.stepTime();
     if (peeps.time == 0) {
       setStatusData(peeps.getStatus());
     }
@@ -92,10 +100,39 @@ export const Canvas = () => {
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = event.target;
     setConfigData({ ...configData, [name]: value });
+    console.log(configData);
+  };
+  const handleCheckChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, checked } = event.target;
+    console.log(name, checked);
+    setConfigData({ ...configData, [name]: checked });
+    console.log(configData.showTails);
+  };
+  const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (canvasRef.current) {
+      const ctx = canvasRef.current;
+      const mx = Math.max(0, e.clientX - ctx.offsetLeft);
+      const my = Math.max(0, e.clientY - ctx.offsetTop);
+      const gx = Math.floor((mx / ctx.width) * peeps.config.gridSize);
+      const gy = Math.floor((my / ctx.height) * peeps.config.gridSize);
+      const g = peeps.grid.get(gx, gy);
+      if (g < 0xffff) {
+        const indiv = peeps.individuals[g];
+        console.log(`Indiv ${g} at ${gx},${gy} = ${indiv.x},${indiv.y}`, indiv);
+        setSelectedIndiv(g);
+        peeps.selectedIndiv = g;
+      }
+    }
+  };
+  const handlePause = () => {
+    peeps.pause = !pause;
+    setPause(() => !pause);
   };
 
   return (
-    <Grid templateColumns="200px 1fr" p="10px" bg="gray.100" gap="10px">
+    <Grid templateColumns="200px 1fr 200px" p="10px" bg="gray.100" gap="10px">
       <Box rounded="md" bg="white" p="10px">
         <Flex direction="column" minHeight="100%">
           <VStack spacing={4} align="flex-start">
@@ -107,6 +144,9 @@ export const Canvas = () => {
               <FormLabel>Population</FormLabel>
               <Input value={statusData.population} readOnly></Input>
             </FormControl>
+            <Button width="full" onClick={handlePause}>
+              {pause ? "Play" : "Pause"}
+            </Button>
           </VStack>
           <Spacer />
           <form onSubmit={handleSettingsForm}>
@@ -131,6 +171,13 @@ export const Canvas = () => {
                 <FormLabel>Grid Size</FormLabel>
                 <Input name="gridSize" value={configData.gridSize} onChange={handleInputChange}></Input>
               </FormControl>
+              <Checkbox name="showTails" isChecked={configData.showTails} onChange={handleCheckChange}>
+                Show tails
+              </Checkbox>
+              <Checkbox name="pauseAfterAnimation" isChecked={configData.pauseAfterAnimation} onChange={handleCheckChange}>
+                Pause after animation
+              </Checkbox>
+
               <Button width="full" type="submit">
                 Reset
               </Button>
@@ -139,7 +186,14 @@ export const Canvas = () => {
         </Flex>
       </Box>
 
-      <canvas {...size} ref={canvasRef} />
+      <canvas {...size} ref={canvasRef} onMouseMove={handleMouseMove} />
+
+      <Box rounded="md" bg="white" p="10px">
+        <h2>{selectedIndiv}</h2>
+        <h2>{selectedIndiv !== -1 && peeps.individuals[selectedIndiv].x}</h2>
+        <h2>{selectedIndiv !== -1 && peeps.individuals[selectedIndiv].y}</h2>
+        <h2>{selectedIndiv !== -1 && peeps.individuals[selectedIndiv].getColor()}</h2>
+      </Box>
     </Grid>
   );
 };
