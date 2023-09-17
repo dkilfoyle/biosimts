@@ -20,7 +20,7 @@ export interface ISimulationConfig {
 
 export const defaultSimulationConfig: ISimulationConfig = {
   initialPopulationSize: 100,
-  lifetime: 200,
+  lifetime: 130,
   maxGenerations: 500,
   animateGeneration: 20,
   gridSize: 128,
@@ -66,6 +66,7 @@ export class Peeps {
         // vacate old position
         this.grid.set(indiv.x, indiv.y, 0xffff);
         // move to new position
+        indiv.addPosToTail();
         indiv.x = newX;
         indiv.y = newY;
         this.grid.set(indiv.x, indiv.y, indiv.id);

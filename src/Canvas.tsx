@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { ISimulationConfig, ISimulationStatus, Peeps, defaultSimulationConfig } from "./Peeps";
 import _ from "lodash";
 import { Box, Button, Flex, FormControl, FormLabel, Grid, Input, Spacer, VStack } from "@chakra-ui/react";
+import { Individual } from "./Individual";
 
 const peeps = new Peeps(defaultSimulationConfig);
 
@@ -44,13 +45,18 @@ export const Canvas = () => {
         ctx.fillRect(i * deltaX + 1, 2, deltaX - 2, deltaY - 2);
       });
 
-      peeps.individuals.forEach((indiv) => {
-        const c = indiv.getColor();
-        ctx.fillStyle = `rgb(${c[0]}, ${c[1]}, ${c[2]})`;
+      const drawIndiv = (x: number, y: number, c: number[], alpha: number) => {
+        ctx.fillStyle = `rgba(${c[0]}, ${c[1]}, ${c[2]}, ${alpha})`;
         ctx.beginPath();
-        ctx.arc(indiv.x * deltaX + offX, indiv.y * deltaY + offY, offX * 0.7, 0, 2 * Math.PI);
+        ctx.arc(x * deltaX + offX, y * deltaY + offY, offX * 0.7, 0, 2 * Math.PI);
         ctx.fill();
         ctx.closePath();
+      };
+
+      peeps.individuals.forEach((indiv) => {
+        const c = indiv.getColor();
+        drawIndiv(indiv.x, indiv.y, c, 1);
+        indiv.tail.forEach((t, i) => drawIndiv(t[0], t[1], c, (1 * i) / 5));
       });
     }
   };
@@ -62,7 +68,7 @@ export const Canvas = () => {
     if (peeps.time == 0) {
       setStatusData(peeps.getStatus());
     }
-    if (peeps.individuals.length < 0 && peeps.generations < peeps.config.maxGenerations) {
+    if (peeps.individuals.length > 0 && peeps.generations < peeps.config.maxGenerations) {
       requestIdRef.current = requestAnimationFrame(runStep);
     } else {
       console.log("done");
