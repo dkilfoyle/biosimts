@@ -59,6 +59,7 @@ export class Peeps {
         genome: _.random(2 ** 24 - 1),
       });
     });
+    this.individuals[0].createNeuralNetwork();
   }
 
   stepTime() {
@@ -78,6 +79,9 @@ export class Peeps {
         indiv.x = newX;
         indiv.y = newY;
         this.grid.set(indiv.x, indiv.y, indiv.id);
+      } else {
+        //unable to move, delete the first tail
+        indiv.tail = [...indiv.tail.slice(1)];
       }
     });
 
